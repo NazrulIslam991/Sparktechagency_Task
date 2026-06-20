@@ -49,10 +49,10 @@ class AuthInterceptor extends Interceptor {
         await SharedPreferenceData.removeToken();
         await SharedPreferenceData.removeRefreshToken();
         if (navigatorKey.currentState != null) {
-          navigatorKey.currentState!.pushNamedAndRemoveUntil(
-            RouteName.loginScreen,
-            (route) => false,
-          );
+          // navigatorKey.currentState!.pushNamedAndRemoveUntil(
+          //   RouteName.loginScreen,
+          //   (route) => false,
+          // );
         }
       }
     }

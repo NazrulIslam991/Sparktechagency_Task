@@ -3,8 +3,10 @@ part of 'route_import_path.dart';
 class AppRouter {
   static Route<dynamic> getRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
-      case RouteName.splashScreen:
-      // return MaterialPageRoute(builder: (_) => SplashScreen());
+      case RouteName.dashboardScreen:
+        return MaterialPageRoute(builder: (_) => DashboardScreen());
+      case RouteName.receivedDataScreen:
+        return MaterialPageRoute(builder: (_) => ReceivedDataScreen());
       default:
         return unDefineRoute();
     }

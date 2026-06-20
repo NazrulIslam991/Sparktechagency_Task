@@ -19,7 +19,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ScreenUtilInit(
-      /// ********* screen utils code **********
+      /// ********* screen utils  **********
       designSize: Size(360, 820),
       minTextAdapt: true,
       splitScreenMode: true,
@@ -36,7 +36,7 @@ class MyApp extends ConsumerWidget {
 
           ///  ****** route code  *********
           onGenerateRoute: AppRouter.getRoute,
-          initialRoute: RouteName.splashScreen,
+          initialRoute: RouteName.dashboardScreen,
         );
       },
     );
