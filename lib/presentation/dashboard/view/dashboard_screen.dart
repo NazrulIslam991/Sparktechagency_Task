@@ -1,14 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sparktechagency_task/core/resources/constant/color_manager.dart';
 import 'package:sparktechagency_task/core/routes/route_name.dart';
 
 import '../../../core/resources/constant/style_manager.dart';
+import '../../../core/services/device_service.dart';
 import '../../widgets/dashboard_info_card.dart';
 import '../../widgets/dashboard_section_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  Map<String, dynamic>? deviceData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  Future<void> init() async {
+    await requestPermissions();
+    await loadDeviceData();
+  }
+
+  ///  PERMISSION REQUEST
+  Future<void> requestPermissions() async {
+    await [
+      Permission.location, // WiFi SSID
+      Permission.phone, // SIM info
+      Permission.activityRecognition, // future step counter
+    ].request();
+  }
+
+  ///  LOAD DATA
+  Future<void> loadDeviceData() async {
+    try {
+      final data = await DeviceService.getDeviceData();
+      setState(() {
+        deviceData = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  String getValue(String key) {
+    if (deviceData == null) return "Loading...";
+    return deviceData![key]?.toString() ?? "N/A";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +93,7 @@ class DashboardScreen extends StatelessWidget {
                 "Share My Pulse",
                 style: getMediumStyle14_500(color: Colors.white),
               ),
-              onTap: () {
-                /// share my pulse
-              },
+              onTap: () {},
             ),
             ListTile(
               leading: const Icon(Icons.history, color: Colors.tealAccent),
@@ -61,139 +109,146 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-        child: Column(
-          children: [
-            /// ********************  BATTERY & HEALTH ********************
-            DashboardSectionCard(
-              title: "Battery & Health",
-              items: [
-                DashboardInfoCard(
-                  label: "Battery Level",
-                  value: "85%",
-                  icon: Icons.battery_charging_full_rounded,
-                  color: Colors.greenAccent,
+
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: loadDeviceData,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    ///  Battery
+                    DashboardSectionCard(
+                      title: "Battery & Health",
+                      items: [
+                        DashboardInfoCard(
+                          label: "Battery Level",
+                          value: getValue("batteryLevel"),
+                          icon: Icons.battery_charging_full_rounded,
+                          color: Colors.greenAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Temperature",
+                          value: getValue("temperature"),
+                          icon: Icons.thermostat_rounded,
+                          color: Colors.orangeAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Health Status",
+                          value: getValue("health"),
+                          icon: Icons.favorite_rounded,
+                          color: Colors.redAccent,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 25.h),
+
+                    ///  Activity
+                    DashboardSectionCard(
+                      title: "Physical Activity",
+                      items: [
+                        DashboardInfoCard(
+                          label: "Step Count",
+                          value: getValue("steps"),
+                          icon: Icons.directions_walk_rounded,
+                          color: Colors.purpleAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Activity Status",
+                          value: getValue("activity"),
+                          icon: Icons.accessibility_new_rounded,
+                          color: Colors.tealAccent,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 25.h),
+
+                    ///  WiFi
+                    DashboardSectionCard(
+                      title: "Wi-Fi Network",
+                      items: [
+                        DashboardInfoCard(
+                          label: "SSID",
+                          value: getValue("ssid"),
+                          icon: Icons.wifi_rounded,
+                          color: Colors.blueAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Signal Strength",
+                          value: getValue("rssi"),
+                          icon: Icons.signal_cellular_alt_rounded,
+                          color: Colors.indigoAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Local IP",
+                          value: getValue("ip"),
+                          icon: Icons.lan_rounded,
+                          color: Colors.brown,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 25.h),
+
+                    ///  Network
+                    DashboardSectionCard(
+                      title: "Mobile Network",
+                      items: [
+                        DashboardInfoCard(
+                          label: "Carrier Name",
+                          value: getValue("carrier"),
+                          icon: Icons.sim_card_rounded,
+                          color: Colors.deepPurpleAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Signal Strength",
+                          value: getValue("signal"),
+                          icon: Icons.network_cell_rounded,
+                          color: Colors.blueGrey,
+                        ),
+                        DashboardInfoCard(
+                          label: "SIM State",
+                          value: getValue("simState"),
+                          icon: Icons.check_circle_rounded,
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 25.h),
+
+                    ///  Device
+                    DashboardSectionCard(
+                      title: "Device Information",
+                      items: [
+                        DashboardInfoCard(
+                          label: "Device Model",
+                          value: getValue("model"),
+                          icon: Icons.phone_android_rounded,
+                          color: Colors.lightBlueAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Android Version",
+                          value: getValue("android"),
+                          icon: Icons.android_rounded,
+                          color: Colors.greenAccent,
+                        ),
+                        DashboardInfoCard(
+                          label: "Device Name",
+                          value: getValue("deviceName"),
+                          icon: Icons.smartphone_rounded,
+                          color: Colors.amber,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                DashboardInfoCard(
-                  label: "Temperature",
-                  value: "32°C",
-                  icon: Icons.thermostat_rounded,
-                  color: Colors.orangeAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Health Status",
-                  value: "Good",
-                  icon: Icons.favorite_rounded,
-                  color: Colors.redAccent,
-                ),
-              ],
+              ),
             ),
-
-            SizedBox(height: 25.h),
-
-            /// ********************  PHYSICAL ACTIVITY ********************
-            DashboardSectionCard(
-              title: "Physical Activity",
-              items: [
-                DashboardInfoCard(
-                  label: "Step Count",
-                  value: "1,240",
-                  icon: Icons.directions_walk_rounded,
-                  color: Colors.purpleAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Activity Status",
-                  value: "Walking",
-                  icon: Icons.accessibility_new_rounded,
-                  color: Colors.tealAccent,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 25.h),
-
-            /// ******************** WIFI INFO ********************
-            DashboardSectionCard(
-              title: "Wi-Fi Network",
-              items: [
-                DashboardInfoCard(
-                  label: "SSID",
-                  value: "Home_WiFi",
-                  icon: Icons.wifi_rounded,
-                  color: Colors.blueAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Signal Strength",
-                  value: "-65 dBm",
-                  icon: Icons.signal_cellular_alt_rounded,
-                  color: Colors.indigoAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Local IP",
-                  value: "192.168.1.5",
-                  icon: Icons.lan_rounded,
-                  color: Colors.brown,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 25.h),
-
-            /// ******************** CARRIER & SIM ********************
-            DashboardSectionCard(
-              title: "Mobile Network",
-              items: [
-                DashboardInfoCard(
-                  label: "Carrier Name",
-                  value: "GP",
-                  icon: Icons.sim_card_rounded,
-                  color: Colors.deepPurpleAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Signal Strength",
-                  value: "-70 dBm",
-                  icon: Icons.network_cell_rounded,
-                  color: Colors.blueGrey,
-                ),
-                DashboardInfoCard(
-                  label: "SIM State",
-                  value: "Ready",
-                  icon: Icons.check_circle_rounded,
-                  color: Colors.green,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 25.h),
-
-            /// ********************  DEVICE INFO  ***********************
-            DashboardSectionCard(
-              title: "Device Information",
-              items: [
-                DashboardInfoCard(
-                  label: "Device Model",
-                  value: "Samsung A54",
-                  icon: Icons.phone_android_rounded,
-                  color: Colors.lightBlueAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Android Version",
-                  value: "Android 14",
-                  icon: Icons.android_rounded,
-                  color: Colors.greenAccent,
-                ),
-                DashboardInfoCard(
-                  label: "Device Name",
-                  value: "Nayon's Phone",
-                  icon: Icons.smartphone_rounded,
-                  color: Colors.amber,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -21,6 +21,7 @@ class DashboardInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
       decoration: BoxDecoration(
         color: ColorManager.surfaceDark,
         borderRadius: BorderRadius.circular(20.r),
@@ -28,8 +29,7 @@ class DashboardInfoCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(width: 12.w),
-
+          /// icon
           Container(
             padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
@@ -39,15 +39,30 @@ class DashboardInfoCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 20.sp),
           ),
 
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
 
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: getRegularStyle12_400(color: Colors.white54)),
-              Text(value, style: getSemiBoldStyle16_600(color: Colors.white)),
-            ],
+          /// 🔥 IMPORTANT FIX
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: getRegularStyle12_400(color: Colors.white54),
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                SizedBox(height: 2.h),
+
+                Text(
+                  value,
+                  style: getSemiBoldStyle16_600(color: Colors.white),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
