@@ -37,3 +37,14 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+/// android/app/main/kotlin/com/example/sparktechagency_task/MainActivity.kt
+/// lib/core/services/device_info_service.dark
+/// lib/core/services/lan_service.dark
+/// lib/data/models/dashboard_state.dart
+/// lib/data/models/received_data_model.dart
+/// lib/data/models/received_data_state.dart
+/// lib/data/sources/shared_preference.dart
+/// lib/presentation/dashboard
+/// lib/presentation/received_data_screen
+/// lib/presentation/widgets
