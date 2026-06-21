@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-class DeviceService {
+class DeviceInfoService {
   static const platform = MethodChannel('device.pulse/channel');
 
   static Future<Map<String, dynamic>> getDeviceData() async {

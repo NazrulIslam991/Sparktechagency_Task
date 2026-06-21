@@ -1,69 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sparktechagency_task/core/resources/constant/color_manager.dart';
-import 'package:sparktechagency_task/core/routes/route_name.dart';
 
+import '../../../core/resources/constant/color_manager.dart';
 import '../../../core/resources/constant/style_manager.dart';
-import '../../../core/services/device_service.dart';
+import '../../../core/routes/route_name.dart';
 import '../../widgets/dashboard_info_card.dart';
 import '../../widgets/dashboard_section_card.dart';
+import '../viewmodel/dashboard_viewmodel.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  Map<String, dynamic>? deviceData;
-  bool isLoading = true;
-
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
     init();
   }
 
+  /// ************* INIT function ******************
   Future<void> init() async {
     await requestPermissions();
-    await loadDeviceData();
+    await ref.read(dashboardProvider.notifier).init();
+    ref
+        .read(dashboardProvider.notifier)
+        .lanService
+        .onRequestReceived = (ip, data) {
+      showPermissionDialog(ip, data);
+    };
   }
 
-  ///  PERMISSION REQUEST
+  /// ************* PERMISSION ****************
   Future<void> requestPermissions() async {
     await [
-      Permission.location, // WiFi SSID
-      Permission.phone, // SIM info
-      Permission.activityRecognition, // future step counter
+      Permission.location,
+      Permission.phone,
+      Permission.activityRecognition,
     ].request();
-  }
-
-  ///  LOAD DATA
-  Future<void> loadDeviceData() async {
-    try {
-      final data = await DeviceService.getDeviceData();
-      setState(() {
-        deviceData = data;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  String getValue(String key) {
-    if (deviceData == null) return "Loading...";
-    return deviceData![key]?.toString() ?? "N/A";
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(dashboardProvider);
+    final vm = ref.read(dashboardProvider.notifier);
+
     return Scaffold(
       backgroundColor: ColorManager.black6,
+
+      /// ************* APPBAR ***************
       appBar: AppBar(
         title: Text(
           "Device Pulse",
@@ -72,8 +62,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         centerTitle: true,
         backgroundColor: ColorManager.black6,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
+
+      /// ************** DRAWER ****************
       drawer: Drawer(
         backgroundColor: ColorManager.green700,
         child: Column(
@@ -87,16 +79,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
+
             ListTile(
-              leading: const Icon(Icons.share, color: Colors.blueAccent),
+              leading: Icon(Icons.share, color: Colors.blueAccent),
               title: Text(
                 "Share My Pulse",
                 style: getMediumStyle14_500(color: Colors.white),
               ),
-              onTap: () {},
+              onTap: () {
+                Navigator.pop(context);
+                showDeviceBottomSheet();
+              },
             ),
+
             ListTile(
-              leading: const Icon(Icons.history, color: Colors.tealAccent),
+              leading: Icon(Icons.history, color: Colors.tealAccent),
               title: Text(
                 "Received Data",
                 style: getMediumStyle14_500(color: Colors.white),
@@ -110,34 +107,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
 
-      body: isLoading
+      /// ************** BODY *****************
+      body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: loadDeviceData,
+              onRefresh: vm.loadDeviceData,
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    ///  Battery
+                    /// ************* BATTERY *************
                     DashboardSectionCard(
                       title: "Battery & Health",
                       items: [
                         DashboardInfoCard(
                           label: "Battery Level",
-                          value: getValue("batteryLevel"),
+                          value: vm.getValue("batteryLevel"),
                           icon: Icons.battery_charging_full_rounded,
                           color: Colors.greenAccent,
                         ),
                         DashboardInfoCard(
                           label: "Temperature",
-                          value: getValue("temperature"),
+                          value: vm.getValue("temperature"),
                           icon: Icons.thermostat_rounded,
                           color: Colors.orangeAccent,
                         ),
                         DashboardInfoCard(
                           label: "Health Status",
-                          value: getValue("health"),
+                          value: vm.getValue("health"),
                           icon: Icons.favorite_rounded,
                           color: Colors.redAccent,
                         ),
@@ -146,19 +144,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     SizedBox(height: 25.h),
 
-                    ///  Activity
+                    /// ************* ACTIVITY *************
                     DashboardSectionCard(
                       title: "Physical Activity",
                       items: [
                         DashboardInfoCard(
                           label: "Step Count",
-                          value: getValue("steps"),
+                          value: vm.getValue("steps"),
                           icon: Icons.directions_walk_rounded,
                           color: Colors.purpleAccent,
                         ),
                         DashboardInfoCard(
                           label: "Activity Status",
-                          value: getValue("activity"),
+                          value: vm.getValue("activity"),
                           icon: Icons.accessibility_new_rounded,
                           color: Colors.tealAccent,
                         ),
@@ -167,25 +165,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     SizedBox(height: 25.h),
 
-                    ///  WiFi
+                    /// ************* WIFI *************
                     DashboardSectionCard(
                       title: "Wi-Fi Network",
                       items: [
                         DashboardInfoCard(
                           label: "SSID",
-                          value: getValue("ssid"),
+                          value: vm.getValue("ssid"),
                           icon: Icons.wifi_rounded,
                           color: Colors.blueAccent,
                         ),
                         DashboardInfoCard(
                           label: "Signal Strength",
-                          value: getValue("rssi"),
+                          value: vm.getValue("rssi"),
                           icon: Icons.signal_cellular_alt_rounded,
                           color: Colors.indigoAccent,
                         ),
                         DashboardInfoCard(
                           label: "Local IP",
-                          value: getValue("ip"),
+                          value: vm.getValue("ip"),
                           icon: Icons.lan_rounded,
                           color: Colors.brown,
                         ),
@@ -194,25 +192,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     SizedBox(height: 25.h),
 
-                    ///  Network
+                    /// ************* MOBILE NETWORK *************
                     DashboardSectionCard(
                       title: "Mobile Network",
                       items: [
                         DashboardInfoCard(
                           label: "Carrier Name",
-                          value: getValue("carrier"),
+                          value: vm.getValue("carrier"),
                           icon: Icons.sim_card_rounded,
                           color: Colors.deepPurpleAccent,
                         ),
                         DashboardInfoCard(
                           label: "Signal Strength",
-                          value: getValue("signal"),
+                          value: vm.getValue("signal"),
                           icon: Icons.network_cell_rounded,
                           color: Colors.blueGrey,
                         ),
                         DashboardInfoCard(
                           label: "SIM State",
-                          value: getValue("simState"),
+                          value: vm.getValue("simState"),
                           icon: Icons.check_circle_rounded,
                           color: Colors.green,
                         ),
@@ -221,25 +219,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     SizedBox(height: 25.h),
 
-                    ///  Device
+                    /// ************* DEVICE INFO *************
                     DashboardSectionCard(
                       title: "Device Information",
                       items: [
                         DashboardInfoCard(
                           label: "Device Model",
-                          value: getValue("model"),
+                          value: vm.getValue("model"),
                           icon: Icons.phone_android_rounded,
                           color: Colors.lightBlueAccent,
                         ),
                         DashboardInfoCard(
                           label: "Android Version",
-                          value: getValue("android"),
+                          value: vm.getValue("android"),
                           icon: Icons.android_rounded,
                           color: Colors.greenAccent,
                         ),
                         DashboardInfoCard(
                           label: "Device Name",
-                          value: getValue("deviceName"),
+                          value: vm.getValue("deviceName"),
                           icon: Icons.smartphone_rounded,
                           color: Colors.amber,
                         ),
@@ -249,6 +247,141 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  /// *************  DEVICE LIST BOTTOM SHEET *************
+  void showDeviceBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ColorManager.black500,
+      isScrollControlled: true,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final state = ref.watch(dashboardProvider);
+            final vm = ref.read(dashboardProvider.notifier);
+
+            return Container(
+              height: 400.h,
+              decoration: BoxDecoration(
+                color: ColorManager.black6,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 20.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Nearby Devices",
+                      style: getSemiBoldStyle18_600(color: Colors.white),
+                    ),
+                  ),
+                  SizedBox(height: 15.h),
+
+                  Expanded(
+                    child: state.devices.isEmpty
+                        ? Center(
+                            child: Text(
+                              "No devices found",
+                              style: getRegularStyle16_400(color: Colors.white),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: state.devices.length,
+                            separatorBuilder: (_, __) =>
+                                Divider(color: ColorManager.black300),
+                            itemBuilder: (context, index) {
+                              final device = state.devices[index];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.white10,
+                                  child: Icon(
+                                    Icons.devices,
+                                    color: Colors.cyanAccent,
+                                    size: 20.sp,
+                                  ),
+                                ),
+                                title: Text(
+                                  device.data["deviceName"] ?? "Unknown",
+                                  style: getSemiBoldStyle16_600(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  device.ip,
+                                  style: getRegularStyle14_400(
+                                    color: ColorManager.grey300,
+                                  ),
+                                ),
+                                trailing: Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white30,
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  vm.sendRequest(device.ip);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// *************  PERMISSION DIALOG *************
+  void showPermissionDialog(String ip, Map<String, dynamic> data) {
+    final vm = ref.read(dashboardProvider.notifier);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text(
+            "Data Share Request",
+            style: getSemiBoldStyle16_600(color: Colors.white70),
+          ),
+          content: Text(
+            "Device $ip wants to share data with you.",
+            style: getRegularStyle16_400(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Reject",
+                style: getSemiBoldStyle16_600(color: Colors.redAccent),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                vm.sendResponse(ip);
+              },
+              child: Text("Allow"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

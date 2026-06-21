@@ -17,7 +17,7 @@ class MainActivity : FlutterActivity(), SensorEventListener {
     // Channel name used for communication between Flutter and Android native code
     private val CHANNEL = "device.pulse/channel"
 
-    // Sensor manager for accessing device sensors (like step counter)
+    // Sensor manager for accessing device sensor
     private lateinit var sensorManager: SensorManager
 
     // Stores step count from step counter sensor
